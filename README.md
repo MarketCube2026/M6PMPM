@@ -4,7 +4,11 @@
 
 ## 线上访问
 
-GitHub Pages 部署完成后访问：
+Vercel 生产环境：
+
+https://m6pmpm.vercel.app/
+
+GitHub Pages：
 
 https://marketcube2026.github.io/M6PMPM/
 

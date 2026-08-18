@@ -4,6 +4,6 @@
   "private": true,
   "description": "市场部项目管理系统 MVP 静态站点",
   "scripts": {
-    "start": "node server.cjs"
+    "start": "node scripts/server.cjs"
   }
 }
