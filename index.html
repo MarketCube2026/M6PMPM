@@ -1,0 +1,1370 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>市场部项目管理系统 MVP</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #fff;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e4e7ec;
+      --brand: #0f766e;
+      --brand-strong: #115e59;
+      --blue: #2563eb;
+      --amber: #b7791f;
+      --red: #b42318;
+      --green: #087443;
+      --violet: #6941c6;
+      --shadow: 0 1px 2px rgba(16, 24, 40, .04);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 236px 1fr;
+      min-height: 100vh;
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 18px 14px;
+      background: #fff;
+      border-right: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 4px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: #e7f5f2;
+      color: var(--brand);
+      font-weight: 800;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 6px;
+      margin-top: 18px;
+    }
+
+    .nav button {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #475467;
+      text-align: left;
+    }
+
+    .nav button.active,
+    .nav button:hover {
+      background: #edf7f5;
+      color: var(--brand);
+    }
+
+    main {
+      width: 100%;
+      max-width: 1480px;
+      padding: 22px;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    .topbar p {
+      max-width: 920px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn {
+      min-height: 38px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .btn.primary {
+      border-color: var(--brand);
+      background: var(--brand);
+      color: #fff;
+    }
+
+    .btn.danger { color: var(--red); }
+    .btn.small { min-height: 30px; padding: 5px 8px; font-size: 12px; }
+
+    .grid { display: grid; gap: 12px; }
+    .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 12px; }
+    .two-col { grid-template-columns: minmax(0, 1.2fr) minmax(340px, .8fr); align-items: start; }
+    .three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .four-col { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .panel { padding: 14px; }
+
+    .panel h3 {
+      margin: 0 0 12px;
+      font-size: 15px;
+    }
+
+    .metric { padding: 14px; }
+
+    .metric span {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric strong {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .metric small {
+      display: block;
+      margin-top: 7px;
+      color: var(--green);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .metric.risk strong,
+    .metric.risk small { color: var(--red); }
+
+    .section {
+      display: none;
+      animation: rise .18s ease-out;
+    }
+
+    .section.active { display: block; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .toolbar input,
+    .toolbar select,
+    .form-grid input,
+    .form-grid select,
+    textarea {
+      width: 100%;
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .toolbar input { min-width: 260px; flex: 1; }
+    .toolbar select { width: 150px; }
+
+    .table-wrap {
+      max-height: 600px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #edf1f5;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f8fafc;
+      color: #526070;
+      font-weight: 700;
+    }
+
+    td p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .status,
+    .phase-chip,
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+
+    .status { padding: 3px 8px; }
+    .status.plan { background: #fef3c7; color: var(--amber); }
+    .status.run { background: #dbeafe; color: #1d4ed8; }
+    .status.risk { background: #fee2e2; color: var(--red); }
+    .status.done { background: #dcfce7; color: var(--green); }
+
+    .phase-chip {
+      margin-top: 6px;
+      padding: 3px 8px;
+      background: #eef4ff;
+      color: var(--blue);
+    }
+
+    .progress {
+      width: 120px;
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e9eef5;
+    }
+
+    .progress i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--brand);
+    }
+
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .kanban {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(190px, 1fr));
+      gap: 12px;
+    }
+
+    .lane {
+      min-height: 270px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .lane.risk-lane {
+      border-color: #f5b5b0;
+      background: #fff8f8;
+    }
+
+    .lane h4 {
+      display: flex;
+      justify-content: space-between;
+      margin: 0 0 10px;
+      color: #344054;
+      font-size: 14px;
+    }
+
+    .task {
+      margin-bottom: 9px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f9fafb;
+    }
+
+    .risk-lane .task {
+      border-color: #f5b5b0;
+      background: #fff;
+    }
+
+    .task b {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .task span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .task .risk-text { color: var(--red); }
+
+    .taxonomy {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .tax-card {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      align-items: start;
+      gap: 12px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-left: 3px solid #91cfc5;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .tax-card h4 {
+      margin: 3px 0 0;
+      font-size: 14px;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip {
+      min-height: 26px;
+      padding: 4px 8px;
+      background: #f2f4f7;
+      color: #475467;
+    }
+
+    .feed,
+    .risk-list,
+    .roadmap,
+    .mvp-list { display: grid; gap: 10px; }
+
+    .feed-item,
+    .risk-item {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 12px;
+      padding: 0 0 11px;
+      border-bottom: 1px solid #edf1f5;
+    }
+
+    .feed-item time,
+    .risk-item time {
+      padding-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .feed-item b,
+    .risk-item b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .feed-item p,
+    .risk-item p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .risk-item p strong { color: var(--red); }
+
+    .bars { display: grid; gap: 12px; }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 100px 1fr 44px;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .bar-track {
+      height: 18px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #eef2f7;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--brand), var(--blue));
+    }
+
+    .pmp-flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(112px, 1fr));
+      gap: 10px;
+    }
+
+    .phase {
+      min-height: 118px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .phase b {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--brand);
+    }
+
+    .phase p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .playbook {
+      padding: 12px;
+      border-left: 4px solid var(--brand);
+      border-radius: 8px;
+      background: #eefaf7;
+      color: #23544f;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .roadmap li,
+    .mvp-list li {
+      margin-bottom: 8px;
+      color: #475467;
+      line-height: 1.65;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .form-grid .wide { grid-column: 1 / -1; }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: #475467;
+      font-size: 12px;
+    }
+
+    textarea {
+      min-height: 74px;
+      resize: vertical;
+    }
+
+    .empty {
+      padding: 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 10;
+      max-width: 360px;
+      padding: 12px 14px;
+      border: 1px solid #a7f3d0;
+      border-radius: 8px;
+      background: #ecfdf3;
+      color: #065f46;
+      box-shadow: 0 8px 24px rgba(16, 24, 40, .12);
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: .18s ease;
+      font-size: 13px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(15, 23, 42, .35);
+    }
+
+    .modal.show { display: flex; }
+
+    .modal-card {
+      width: min(760px, 100%);
+      max-height: 86vh;
+      overflow: auto;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgba(16, 24, 40, .2);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .modal-head h3 { margin: 0; font-size: 18px; }
+    .modal-body { padding: 16px; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .detail {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f9fafb;
+    }
+
+    .detail b {
+      display: block;
+      margin-bottom: 6px;
+      color: #475467;
+      font-size: 12px;
+    }
+
+    .detail span {
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .hidden-file { display: none; }
+
+    @media (max-width: 1160px) {
+      .app { grid-template-columns: 1fr; }
+      aside { position: static; height: auto; }
+      .nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .two-col, .kanban, .kpis, .four-col { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      main { padding: 16px; }
+      .topbar { display: grid; }
+      .actions { justify-content: flex-start; }
+      .nav, .two-col, .kanban, .kpis, .three-col, .four-col, .form-grid, .pmp-flow, .detail-grid { grid-template-columns: 1fr; }
+      .toolbar input, .toolbar select { min-width: 100%; width: 100%; }
+      .tax-card, .feed-item, .risk-item { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 88px 1fr 32px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <div>
+          <h1>市场部项目管理系统</h1>
+          <p>PMP闭环 · 项目协同 · 实时可视化</p>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <button class="active" data-view="dashboard">⌘ 工作台</button>
+        <button data-view="projects">▦ 项目台账</button>
+        <button data-view="kanban">☷ 任务看板</button>
+        <button data-view="insights">◒ 可视化</button>
+        <button data-view="plan">◇ 方案计划</button>
+        <button data-view="new">＋ 新建项目</button>
+      </nav>
+    </aside>
+
+    <main>
+      <section id="dashboard" class="section active">
+        <div class="topbar">
+          <div>
+            <h2>市场项目经营工作台</h2>
+            <p>以 PMP 的启动、规划、执行、监控、收尾为主线，将市场推广、品牌宣传、物料内容、其他业务和数据复盘统一到一个项目池，服务负责人周会同步、风险预警和复盘沉淀。</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="exportCsv">导出台账</button>
+            <button class="btn" id="exportJson">备份数据</button>
+            <button class="btn" id="importJson">导入备份</button>
+            <button class="btn primary" data-jump="new">新建项目</button>
+            <input id="importFile" class="hidden-file" type="file" accept="application/json,.json" />
+          </div>
+        </div>
+
+        <div class="grid kpis" id="kpiCards"></div>
+
+        <div class="grid two-col">
+          <div class="card panel">
+            <h3>项目分类地图</h3>
+            <div class="grid taxonomy" id="taxonomy"></div>
+          </div>
+          <div class="grid">
+            <div class="card panel">
+              <h3>风险与阻塞</h3>
+              <div class="risk-list" id="riskList"></div>
+            </div>
+            <div class="card panel">
+              <h3>近期动态</h3>
+              <div class="feed" id="activityFeed"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="projects" class="section">
+        <div class="topbar">
+          <div>
+            <h2>项目台账</h2>
+            <p>用于每周例会、项目同步、预算评估和风险追踪。支持搜索、筛选、详情、编辑、删除、导出和本地备份。</p>
+          </div>
+          <div class="actions">
+            <button class="btn" id="clearFilters">清空筛选</button>
+            <button class="btn danger" id="resetData">恢复示例数据</button>
+            <button class="btn primary" data-jump="new">新增</button>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <div class="toolbar">
+            <input id="searchInput" type="search" placeholder="搜索项目、负责人、目标、交付物、风险、下一步..." />
+            <select id="categoryFilter" aria-label="项目大类"></select>
+            <select id="statusFilter" aria-label="状态">
+              <option value="">全部状态</option>
+              <option>规划中</option>
+              <option>执行中</option>
+              <option>风险关注</option>
+              <option>已完成</option>
+            </select>
+            <select id="phaseFilter" aria-label="PMP阶段">
+              <option value="">全部阶段</option>
+              <option>启动</option>
+              <option>规划</option>
+              <option>执行</option>
+              <option>监控</option>
+              <option>收尾</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>项目</th>
+                  <th>分类</th>
+                  <th>负责人</th>
+                  <th>周期</th>
+                  <th>状态</th>
+                  <th>进度</th>
+                  <th>管理信息</th>
+                  <th>最新动态</th>
+                </tr>
+              </thead>
+              <tbody id="projectRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="kanban" class="section">
+        <div class="topbar">
+          <div>
+            <h2>任务看板</h2>
+            <p>按项目状态形成日常协作视图，风险关注列突出展示阻塞和下一步动作，方便负责人快速介入。</p>
+          </div>
+        </div>
+        <div class="kanban" id="kanbanBoard"></div>
+      </section>
+
+      <section id="insights" class="section">
+        <div class="topbar">
+          <div>
+            <h2>项目组合可视化</h2>
+            <p>围绕项目组合、状态、PMP 阶段和风险分布建立统一视图，帮助市场负责人判断优先级、资源占用和跨团队协同重点。</p>
+          </div>
+        </div>
+
+        <div class="grid two-col">
+          <div class="card panel"><h3>项目组合分布</h3><div class="bars" id="categoryBars"></div></div>
+          <div class="card panel"><h3>状态分布</h3><div class="bars" id="statusBars"></div></div>
+          <div class="card panel"><h3>PMP 阶段分布</h3><div class="bars" id="phaseBars"></div></div>
+          <div class="card panel"><h3>负责人资源分布</h3><div class="bars" id="ownerBars"></div></div>
+        </div>
+
+        <div class="card panel" style="margin-top:12px">
+          <h3>PMP 生命周期</h3>
+          <div class="pmp-flow">
+            <div class="phase"><b>启动</b><p>定义项目价值、范围、发起人、目标和成功标准。</p></div>
+            <div class="phase"><b>规划</b><p>拆解里程碑、预算、资源、沟通机制和风险清单。</p></div>
+            <div class="phase"><b>执行</b><p>推进任务、内容、会议、物料、协同和供应商交付。</p></div>
+            <div class="phase"><b>监控</b><p>跟踪进度、成本、质量、风险和变更，形成预警。</p></div>
+            <div class="phase"><b>收尾</b><p>沉淀成果、素材、数据、复盘结论和可复用模板。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="plan" class="section">
+        <div class="topbar">
+          <div>
+            <h2>整体思路与方案计划</h2>
+            <p>从“项目透明、职责明确、动态同步、风险前置、结果复盘”五个目标出发，先做轻量项目中台，再逐步接入流程、资料、审批和企业协同工具。</p>
+          </div>
+        </div>
+
+        <div class="grid three-col">
+          <div class="card panel">
+            <h3>建设目标</h3>
+            <ul class="roadmap">
+              <li>市场部项目统一入口：活动、宣传、物料、销售支持、总部任务和复盘进入同一台账。</li>
+              <li>项目经理负责制：每个项目明确负责人、协作人、目标、时间、交付物、风险和下一步动作。</li>
+              <li>管理层驾驶舱：实时查看进度、风险、资源占用和重点事项。</li>
+              <li>复盘资产沉淀：项目结束后沉淀数据、素材、费用、经验和可复用模板。</li>
+            </ul>
+          </div>
+          <div class="card panel">
+            <h3>功能地图</h3>
+            <ul class="roadmap">
+              <li>项目池：分类、状态、阶段、负责人、进度、里程碑、风险、交付物。</li>
+              <li>协作台：最新动态、阻塞事项、下一步动作、周会同步。</li>
+              <li>看板：按状态推进项目，风险项目置顶关注。</li>
+              <li>可视化：项目组合、阶段、状态和负责人资源统计。</li>
+              <li>复盘库：月度复盘、单项目复盘、经验模板和指标看板。</li>
+            </ul>
+          </div>
+          <div class="card panel">
+            <h3>MVP 边界</h3>
+            <ul class="mvp-list">
+              <li>实现单页工作台、项目台账、筛选搜索、看板、图表、新建/编辑/删除项目和导入导出。</li>
+              <li>使用浏览器本地存储，不依赖网络、不依赖后端、不需要安装。</li>
+              <li>不做登录、多端同步、权限、附件上传、审批流；这些进入后续版本。</li>
+              <li>优先服务市场部负责人和项目负责人每周例会同步。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="grid four-col" style="margin-top:12px">
+          <div class="card panel"><h3>第1阶段</h3><div class="playbook">跑通 MVP，形成市场项目统一台账和周会同步模板。</div></div>
+          <div class="card panel"><h3>第2阶段</h3><div class="playbook">补充归档、复盘字段，接入共享资料目录和模板库。</div></div>
+          <div class="card panel"><h3>第3阶段</h3><div class="playbook">接入多人数据源、权限、消息提醒和企业协同工具。</div></div>
+          <div class="card panel"><h3>第4阶段</h3><div class="playbook">沉淀项目管理指标，形成预算、资源和效果评估驾驶舱。</div></div>
+        </div>
+      </section>
+
+      <section id="new" class="section">
+        <div class="topbar">
+          <div>
+            <h2 id="formTitle">新建项目</h2>
+            <p>录入后会进入项目台账、看板和可视化统计。当前系统保存到本机浏览器，刷新页面仍会保留。</p>
+          </div>
+        </div>
+
+        <div class="card panel">
+          <form id="projectForm" class="form-grid">
+            <input name="id" type="hidden" />
+            <label>项目名称
+              <input name="name" required placeholder="例如：Q4品牌传播专项" />
+            </label>
+            <label>负责人
+              <input name="owner" required placeholder="例如：品牌传播组/项目经理" />
+            </label>
+            <label>项目大类
+              <select name="category" id="formCategory"></select>
+            </label>
+            <label>项目类型
+              <select name="type" id="formType"></select>
+            </label>
+            <label>PMP 阶段
+              <select name="phase">
+                <option>启动</option>
+                <option>规划</option>
+                <option selected>执行</option>
+                <option>监控</option>
+                <option>收尾</option>
+              </select>
+            </label>
+            <label>状态
+              <select name="status">
+                <option>规划中</option>
+                <option selected>执行中</option>
+                <option>风险关注</option>
+                <option>已完成</option>
+              </select>
+            </label>
+            <label>开始日期
+              <input name="start" type="date" required />
+            </label>
+            <label>结束日期
+              <input name="end" type="date" required />
+            </label>
+            <label>进度 %
+              <input name="progress" type="number" min="0" max="100" value="20" />
+            </label>
+            <label>关键交付物
+              <input name="deliverable" placeholder="例如：活动方案、传播稿件、产品资料包" />
+            </label>
+            <label class="wide">项目目标
+              <textarea name="goal" placeholder="描述业务目标、成功标准或管理层关注点"></textarea>
+            </label>
+            <label class="wide">风险/阻塞
+              <textarea name="risk" placeholder="记录预算、资源、审批、外部合作、时间节点等风险"></textarea>
+            </label>
+            <label class="wide">下一步动作
+              <textarea name="next" placeholder="明确下一步动作、责任人和期望完成时间"></textarea>
+            </label>
+            <label class="wide">最新动态
+              <textarea name="update" placeholder="记录关键进展、待协同事项、风险或下一步动作"></textarea>
+            </label>
+            <div class="wide actions" style="justify-content:flex-start">
+              <button class="btn primary" type="submit">保存项目</button>
+              <button class="btn" type="button" id="cancelEdit">取消编辑</button>
+              <button class="btn" type="reset">清空</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3 id="detailTitle">项目详情</h3>
+          <p id="detailSub" style="margin:6px 0 0;color:#667085;font-size:12px"></p>
+        </div>
+        <button class="btn small" id="closeDetail">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-grid" id="detailBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const taxonomy = {
+      "市场推广": ["总部活动", "品牌项目", "区域支持", "其他"],
+      "品牌宣传": ["自媒体运营", "外媒宣传", "政府事业", "舆情处理", "其他"],
+      "物料内容": ["企业宣传", "产品技术", "临床推广", "物料设计", "其他"],
+      "其他业务": ["销售相关", "总部相关", "其他"],
+      "数据复盘": ["定期复盘（月）", "项目复盘", "其他"]
+    };
+
+    const seedProjects = [
+      { name: "Q3医学信息及业务管理会", category: "市场推广", type: "总部活动", owner: "活动项目组", start: "2026-07-03", end: "2026-07-05", status: "已完成", phase: "收尾", progress: 100, goal: "完成季度医学信息同步和业务管理共识拉齐。", deliverable: "会议执行资料、参会反馈、复盘纪要", risk: "资料归档口径需统一。", next: "完成照片、签到、费用和复盘材料归档。", update: "会议执行落地完成，进入资料归档与复盘阶段。" },
+      { name: "K2登峰计划-洛阳特训营", category: "市场推广", type: "品牌项目", owner: "培训项目组", start: "2026-08-18", end: "2026-09-05", status: "规划中", phase: "规划", progress: 45, goal: "打造重点客户培训场景，提升区域学术影响和产品认知。", deliverable: "日程方案、讲师确认、现场物料、会后总结", risk: "讲师档期、现场物料和参会确认仍需锁定。", next: "本周确认日程、讲师、场地动线和物料清单。", update: "9月5日场次筹备中，需确认日程、讲师与现场物料。" },
+      { name: "区域会议赞助支持评估", category: "市场推广", type: "区域支持", owner: "区域支持接口人", start: "2026-08-01", end: "2026-08-31", status: "执行中", phase: "监控", progress: 62, goal: "统一区域会议支持标准，提升预算使用透明度。", deliverable: "赞助评估表、支持标准、预算记录", risk: "多地区申请口径不一致，可能影响审批效率。", next: "建立统一评估模板，按优先级完成审批建议。", update: "多地区会议赞助申请评估中，需统一支持标准与预算记录。" },
+      { name: "微信公众号月度运营", category: "品牌宣传", type: "自媒体运营", owner: "品牌传播组", start: "2026-07-01", end: "2026-07-31", status: "已完成", phase: "收尾", progress: 100, goal: "稳定品牌内容输出并形成月度传播复盘。", deliverable: "月度内容清单、阅读数据、粉丝增长复盘", risk: "需把高阅读主题沉淀为选题方法。", next: "复盘高阅读文章并同步 8 月选题建议。", update: "发布9篇，总粉丝约5.3万，阅读量约1.5万，粉丝净增长400人。" },
+      { name: "消化道多癌早筛外媒传播", category: "品牌宣传", type: "外媒宣传", owner: "公关传播组", start: "2026-07-01", end: "2026-08-15", status: "执行中", phase: "执行", progress: 78, goal: "扩大早筛技术外部传播声量，提升品牌专业形象。", deliverable: "外媒发布链接、传播素材包、二次传播计划", risk: "后续二次传播素材需要医学内容审核。", next: "整理已发布媒体链接，准备二次传播文案。", update: "投稿9家，已发布8家，后续跟进二次传播与素材沉淀。" },
+      { name: "舆情监测与风险处理", category: "品牌宣传", type: "舆情处理", owner: "品牌传播组", start: "2026-08-01", end: "2026-08-31", status: "风险关注", phase: "监控", progress: 50, goal: "建立持续监测和快速响应机制，降低品牌风险。", deliverable: "舆情日报、风险分级、处理记录", risk: "外部平台信息分散，风险响应窗口短。", next: "建立重点平台监测清单和升级响应机制。", update: "持续监测自媒体、网站、公众号与重点外部平台动态。" },
+      { name: "公司介绍资料更新", category: "物料内容", type: "企业宣传", owner: "内容资料组", start: "2026-07-01", end: "2026-07-31", status: "已完成", phase: "收尾", progress: 100, goal: "统一公司对外介绍口径，支持销售、会议和来访场景。", deliverable: "公司介绍 PPT、Word 版、展厅版", risk: "需维护后续版本更新责任。", next: "归档源文件并建立版本命名规则。", update: "公司介绍PPT、Word版、展厅版完成更新。" },
+      { name: "学术文章List与产品资料归档", category: "物料内容", type: "产品技术", owner: "医学内容组", start: "2026-07-01", end: "2026-08-10", status: "执行中", phase: "执行", progress: 72, goal: "建立产品技术证据资料池，支撑推广和销售答疑。", deliverable: "文章 List、原文归档、产品资料索引", risk: "原文收集和标签分类工作量较大。", next: "补齐文章标签，形成可检索目录。", update: "学术文章List更新50篇以上，原文收集、下载、归档中。" },
+      { name: "2027节日节气海报方案", category: "物料内容", type: "物料设计", owner: "设计组", start: "2026-07-01", end: "2026-08-31", status: "执行中", phase: "执行", progress: 58, goal: "提前规划年度品牌视觉内容，减少临时设计压力。", deliverable: "12个节日、24个节气海报初稿", risk: "品牌风格统一和业务适配仍需审阅。", next: "组织品牌风格审阅并确定可复用模板。", update: "12个节日、24个节气初稿完成，待品牌风格统一审阅。" },
+      { name: "新员工AI面试考核", category: "其他业务", type: "总部相关", owner: "市场管理组", start: "2026-07-01", end: "2026-07-31", status: "已完成", phase: "收尾", progress: 100, goal: "提升新员工考核效率，沉淀跨部门题库。", deliverable: "考核任务、结果整理、部门题库", risk: "后续需明确题库维护机制。", next: "归档题库并同步可复用流程。", update: "45名新员工考试任务发布、结果整理与12个部门题库归档完成。" },
+      { name: "销售支持资料协同", category: "其他业务", type: "销售相关", owner: "销售赋能接口人", start: "2026-08-01", end: "2026-08-31", status: "规划中", phase: "启动", progress: 20, goal: "梳理区域高频需求，形成销售可直接使用的资料包。", deliverable: "需求清单、资料包、使用说明", risk: "需求来源分散，优先级需要业务确认。", next: "收集区域 TOP10 高频需求并确认资料包范围。", update: "梳理区域高频需求，准备销售可直接使用的资料包。" },
+      { name: "市场部7月月度复盘", category: "数据复盘", type: "定期复盘（月）", owner: "市场部负责人", start: "2026-08-01", end: "2026-08-08", status: "风险关注", phase: "监控", progress: 80, goal: "形成市场部月度经营复盘，支持管理层判断资源投入。", deliverable: "月度复盘报告、改进动作清单", risk: "活动成本、线索转化和传播效果数据仍不完整。", next: "补齐活动成本、线索转化和传播效果数据。", update: "需补齐活动成本、线索转化、传播效果和复盘改进动作。" },
+      { name: "CTONG年会项目复盘", category: "数据复盘", type: "项目复盘", owner: "活动项目组", start: "2026-08-01", end: "2026-08-20", status: "规划中", phase: "规划", progress: 25, goal: "沉淀大型会议执行经验和预算复用参考。", deliverable: "项目复盘、预算分析、可复用清单", risk: "执行过程资料和参会反馈需要集中收集。", next: "整理执行过程、参会反馈、预算使用和可复用清单。", update: "待整理执行过程、参会反馈、预算使用与可复用清单。" }
+    ];
+
+    const oldStoreKeys = ["marketing-pm-mvp-projects-v2", "marketing-pm-mvp-projects"];
+    const storeKey = "marketing-pm-mvp-projects-v3";
+    const phases = ["启动", "规划", "执行", "监控", "收尾"];
+    const statuses = ["规划中", "执行中", "风险关注", "已完成"];
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, function(char) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char];
+      });
+    }
+
+    function makeId() {
+      return "p-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+    }
+
+    function phaseFromStatus(status) {
+      return { "规划中": "规划", "执行中": "执行", "风险关注": "监控", "已完成": "收尾" }[status] || "启动";
+    }
+
+    function normalizeProject(project) {
+      const status = statuses.includes(project.status) ? project.status : "规划中";
+      const category = taxonomy[project.category] ? project.category : "其他业务";
+      const type = taxonomy[category].includes(project.type) ? project.type : (project.type || "其他");
+      return {
+        id: project.id || makeId(),
+        name: project.name || "未命名项目",
+        category,
+        type,
+        owner: project.owner || "待指定",
+        start: project.start || "2026-08-01",
+        end: project.end || "2026-08-31",
+        status,
+        phase: phases.includes(project.phase) ? project.phase : phaseFromStatus(status),
+        progress: Math.max(0, Math.min(100, Number(project.progress || 0))),
+        goal: project.goal || "待补充项目目标和成功标准。",
+        deliverable: project.deliverable || "待补充关键交付物。",
+        risk: project.risk || (status === "风险关注" ? "待明确风险与阻塞。" : "暂无重大风险。"),
+        next: project.next || "待明确下一步动作。",
+        update: project.update || "新项目已创建，待补充最新动态。"
+      };
+    }
+
+    function loadProjects() {
+      try {
+        const current = JSON.parse(localStorage.getItem(storeKey) || "null");
+        if (Array.isArray(current)) return current.map(normalizeProject);
+        for (const key of oldStoreKeys) {
+          const legacy = JSON.parse(localStorage.getItem(key) || "null");
+          if (Array.isArray(legacy)) return legacy.map(normalizeProject);
+        }
+      } catch (error) {
+        console.warn("读取本地数据失败，已回退示例数据", error);
+      }
+      return seedProjects.map(normalizeProject);
+    }
+
+    let projects = loadProjects();
+
+    function save() {
+      localStorage.setItem(storeKey, JSON.stringify(projects));
+    }
+
+    function toast(message) {
+      const node = $("#toast");
+      node.textContent = message;
+      node.classList.add("show");
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(function() { node.classList.remove("show"); }, 2200);
+    }
+
+    function statusClass(status) {
+      return { "规划中": "plan", "执行中": "run", "风险关注": "risk", "已完成": "done" }[status] || "plan";
+    }
+
+    function renderKpis() {
+      const total = projects.length;
+      const done = projects.filter(function(p) { return p.status === "已完成"; }).length;
+      const risks = projects.filter(function(p) { return p.status === "风险关注"; }).length;
+      const avg = Math.round(projects.reduce(function(sum, p) { return sum + Number(p.progress || 0); }, 0) / Math.max(total, 1));
+      const monitor = projects.filter(function(p) { return p.phase === "监控"; }).length;
+      const data = [
+        ["项目总数", total, "覆盖五大项目类型", ""],
+        ["完成项目", done, "进入归档与复盘", ""],
+        ["风险关注", risks, risks ? "需要负责人介入" : "暂无红色预警", "risk"],
+        ["平均进度", avg + "%", "监控阶段 " + monitor + " 个项目", ""]
+      ];
+      $("#kpiCards").innerHTML = data.map(function(item) {
+        return '<div class="card metric ' + item[3] + '"><span>' + item[0] + '</span><strong>' + item[1] + '</strong><small>' + item[2] + '</small></div>';
+      }).join("");
+    }
+
+    function renderTaxonomy() {
+      $("#taxonomy").innerHTML = Object.entries(taxonomy).map(function(entry) {
+        return '<div class="tax-card"><h4>' + entry[0] + '</h4><div class="chips">' + entry[1].map(function(t) {
+          return '<span class="chip">' + t + '</span>';
+        }).join("") + '</div></div>';
+      }).join("");
+    }
+
+    function renderFilters() {
+      $("#categoryFilter").innerHTML = ['<option value="">全部大类</option>'].concat(Object.keys(taxonomy).map(function(c) { return "<option>" + c + "</option>"; })).join("");
+      $("#formCategory").innerHTML = Object.keys(taxonomy).map(function(c) { return "<option>" + c + "</option>"; }).join("");
+      syncTypeOptions();
+    }
+
+    function syncTypeOptions(selectedType) {
+      const cat = $("#formCategory").value || Object.keys(taxonomy)[0];
+      $("#formType").innerHTML = taxonomy[cat].map(function(t) {
+        return '<option' + (t === selectedType ? " selected" : "") + '>' + t + '</option>';
+      }).join("");
+    }
+
+    function filteredProjects() {
+      const q = $("#searchInput") ? $("#searchInput").value.trim().toLowerCase() : "";
+      const cat = $("#categoryFilter") ? $("#categoryFilter").value : "";
+      const status = $("#statusFilter") ? $("#statusFilter").value : "";
+      const phase = $("#phaseFilter") ? $("#phaseFilter").value : "";
+      return projects.filter(function(p) {
+        const text = [p.name, p.category, p.type, p.owner, p.goal, p.deliverable, p.risk, p.next, p.update].join(" ").toLowerCase();
+        return (!q || text.includes(q)) && (!cat || p.category === cat) && (!status || p.status === status) && (!phase || p.phase === phase);
+      });
+    }
+
+    function renderRows() {
+      const rows = filteredProjects();
+      $("#projectRows").innerHTML = rows.length ? rows.map(function(p) {
+        return '<tr><td><strong>' + escapeHtml(p.name) + '</strong><br><span class="phase-chip">' + escapeHtml(p.phase) + '</span><div class="row-actions"><button class="btn small" data-action="detail" data-id="' + p.id + '">详情</button><button class="btn small" data-action="edit" data-id="' + p.id + '">编辑</button><button class="btn small danger" data-action="delete" data-id="' + p.id + '">删除</button></div></td><td>' + escapeHtml(p.category) + '<br><p>' + escapeHtml(p.type) + '</p></td><td>' + escapeHtml(p.owner) + '</td><td>' + escapeHtml(p.start) + '<br>' + escapeHtml(p.end) + '</td><td><span class="status ' + statusClass(p.status) + '">' + escapeHtml(p.status) + '</span></td><td><div class="progress" aria-label="进度 ' + p.progress + '%"><i style="width:' + p.progress + '%"></i></div><p>' + p.progress + '%</p></td><td><strong>目标：</strong>' + escapeHtml(p.goal) + '<p><strong>交付物：</strong>' + escapeHtml(p.deliverable) + '</p><p><strong>风险：</strong>' + escapeHtml(p.risk) + '</p><p><strong>下一步：</strong>' + escapeHtml(p.next) + '</p></td><td>' + escapeHtml(p.update) + '</td></tr>';
+      }).join("") : '<tr><td colspan="8" class="empty">没有符合条件的项目</td></tr>';
+    }
+
+    function renderKanban() {
+      $("#kanbanBoard").innerHTML = statuses.map(function(status) {
+        const items = projects.filter(function(p) { return p.status === status; });
+        return '<div class="lane ' + (status === "风险关注" ? "risk-lane" : "") + '"><h4>' + status + '<span>' + items.length + '</span></h4>' + (items.map(function(p) {
+          return '<div class="task"><b>' + escapeHtml(p.name) + '</b><span>' + escapeHtml(p.category) + ' / ' + escapeHtml(p.type) + ' / ' + escapeHtml(p.phase) + '</span><span>负责人：' + escapeHtml(p.owner) + '</span><span>进度：' + p.progress + '%</span><span>交付物：' + escapeHtml(p.deliverable) + '</span><span class="' + (status === "风险关注" ? "risk-text" : "") + '">风险：' + escapeHtml(p.risk) + '</span><span>下一步：' + escapeHtml(p.next) + '</span><div class="row-actions"><button class="btn small" data-action="detail" data-id="' + p.id + '">详情</button><button class="btn small" data-action="edit" data-id="' + p.id + '">编辑</button></div></div>';
+        }).join("") || '<div class="empty">暂无项目</div>') + '</div>';
+      }).join("");
+    }
+
+    function groupCount(field, limit) {
+      const grouped = projects.reduce(function(acc, p) {
+        acc[p[field]] = (acc[p[field]] || 0) + 1;
+        return acc;
+      }, {});
+      const entries = Object.entries(grouped).sort(function(a, b) { return b[1] - a[1]; });
+      return Object.fromEntries(limit ? entries.slice(0, limit) : entries);
+    }
+
+    function renderBars(target, data) {
+      const max = Math.max.apply(null, Object.values(data).concat([1]));
+      $(target).innerHTML = Object.entries(data).map(function(entry) {
+        const width = Math.round(entry[1] / max * 100);
+        return '<div class="bar-row"><span>' + escapeHtml(entry[0]) + '</span><div class="bar-track"><div class="bar-fill" style="width:' + width + '%"></div></div><b>' + entry[1] + '</b></div>';
+      }).join("") || '<div class="empty">暂无数据</div>';
+    }
+
+    function renderFeed() {
+      const recent = projects.slice().sort(function(a, b) { return b.end.localeCompare(a.end); }).slice(0, 7);
+      $("#activityFeed").innerHTML = recent.map(function(p) {
+        return '<div class="feed-item"><time>' + escapeHtml(p.end) + '</time><div><b>' + escapeHtml(p.name) + '</b><p>' + escapeHtml(p.update) + '</p></div></div>';
+      }).join("");
+    }
+
+    function renderRisks() {
+      const risks = projects.filter(function(p) {
+        return p.status === "风险关注" || (p.risk && p.risk !== "暂无重大风险。");
+      }).slice(0, 6);
+      $("#riskList").innerHTML = risks.length ? risks.map(function(p) {
+        return '<div class="risk-item"><time>' + escapeHtml(p.end) + '</time><div><b>' + escapeHtml(p.name) + '</b><p><strong>' + escapeHtml(p.risk) + '</strong></p><p>下一步：' + escapeHtml(p.next) + '</p></div></div>';
+      }).join("") : '<div class="empty">暂无风险与阻塞事项</div>';
+    }
+
+    function renderAll() {
+      renderKpis();
+      renderTaxonomy();
+      renderRows();
+      renderKanban();
+      renderFeed();
+      renderRisks();
+      renderBars("#categoryBars", groupCount("category"));
+      renderBars("#statusBars", groupCount("status"));
+      renderBars("#phaseBars", groupCount("phase"));
+      renderBars("#ownerBars", groupCount("owner", 8));
+    }
+
+    function showView(id) {
+      $$(".section").forEach(function(s) { s.classList.toggle("active", s.id === id); });
+      $$(".nav button").forEach(function(b) { b.classList.toggle("active", b.dataset.view === id); });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function formToProject(form) {
+      const data = Object.fromEntries(new FormData(form).entries());
+      if (data.start && data.end && data.start > data.end) {
+        throw new Error("结束日期不能早于开始日期");
+      }
+      return normalizeProject(data);
+    }
+
+    function fillForm(project) {
+      const form = $("#projectForm");
+      form.elements.id.value = project.id;
+      form.elements.name.value = project.name;
+      form.elements.owner.value = project.owner;
+      form.elements.category.value = project.category;
+      syncTypeOptions(project.type);
+      form.elements.type.value = project.type;
+      form.elements.phase.value = project.phase;
+      form.elements.status.value = project.status;
+      form.elements.start.value = project.start;
+      form.elements.end.value = project.end;
+      form.elements.progress.value = project.progress;
+      form.elements.deliverable.value = project.deliverable;
+      form.elements.goal.value = project.goal;
+      form.elements.risk.value = project.risk;
+      form.elements.next.value = project.next;
+      form.elements.update.value = project.update;
+      $("#formTitle").textContent = "编辑项目";
+      showView("new");
+    }
+
+    function clearForm() {
+      $("#projectForm").reset();
+      $("#projectForm").elements.id.value = "";
+      $("#formTitle").textContent = "新建项目";
+      syncTypeOptions();
+    }
+
+    function findProject(id) {
+      return projects.find(function(p) { return p.id === id; });
+    }
+
+    function showDetail(id) {
+      const p = findProject(id);
+      if (!p) return;
+      $("#detailTitle").textContent = p.name;
+      $("#detailSub").textContent = p.category + " / " + p.type + " / " + p.owner;
+      const fields = [
+        ["状态", p.status + " · " + p.phase + " · " + p.progress + "%"],
+        ["周期", p.start + " 至 " + p.end],
+        ["项目目标", p.goal],
+        ["关键交付物", p.deliverable],
+        ["风险/阻塞", p.risk],
+        ["下一步动作", p.next],
+        ["最新动态", p.update]
+      ];
+      $("#detailBody").innerHTML = fields.map(function(field) {
+        return '<div class="detail"><b>' + escapeHtml(field[0]) + '</b><span>' + escapeHtml(field[1]) + '</span></div>';
+      }).join("");
+      $("#detailModal").classList.add("show");
+    }
+
+    function deleteProject(id) {
+      const p = findProject(id);
+      if (!p) return;
+      if (!confirm("确认删除项目：“" + p.name + "”？此操作只影响本机浏览器数据。")) return;
+      projects = projects.filter(function(item) { return item.id !== id; });
+      save();
+      renderAll();
+      toast("项目已删除");
+    }
+
+    function download(filename, text, type) {
+      const blob = new Blob([text], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCsv() {
+      const headers = ["项目", "大类", "类型", "负责人", "开始", "结束", "状态", "PMP阶段", "进度", "项目目标", "关键交付物", "风险/阻塞", "下一步动作", "最新动态"];
+      const lines = [headers].concat(projects.map(function(p) {
+        return [p.name, p.category, p.type, p.owner, p.start, p.end, p.status, p.phase, p.progress, p.goal, p.deliverable, p.risk, p.next, p.update];
+      }));
+      const csv = lines.map(function(row) {
+        return row.map(function(cell) { return '"' + String(cell).replaceAll('"', '""') + '"'; }).join(",");
+      }).join("\n");
+      download("市场部项目台账.csv", "\ufeff" + csv, "text/csv;charset=utf-8");
+    }
+
+    function exportJson() {
+      const payload = {
+        app: "市场部项目管理系统MVP",
+        version: 3,
+        exportedAt: new Date().toISOString(),
+        projects
+      };
+      download("市场部项目管理系统备份.json", JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
+    }
+
+    function importBackup(file) {
+      const reader = new FileReader();
+      reader.onload = function() {
+        try {
+          const parsed = JSON.parse(reader.result);
+          const incoming = Array.isArray(parsed) ? parsed : parsed.projects;
+          if (!Array.isArray(incoming)) throw new Error("备份文件中没有 projects 数组");
+          projects = incoming.map(normalizeProject);
+          save();
+          renderAll();
+          toast("已导入 " + projects.length + " 个项目");
+        } catch (error) {
+          alert("导入失败：" + error.message);
+        } finally {
+          $("#importFile").value = "";
+        }
+      };
+      reader.readAsText(file, "utf-8");
+    }
+
+    document.addEventListener("click", function(event) {
+      const actionNode = event.target.closest("[data-action]");
+      if (!actionNode) return;
+      const id = actionNode.dataset.id;
+      const action = actionNode.dataset.action;
+      if (action === "detail") showDetail(id);
+      if (action === "edit") {
+        const p = findProject(id);
+        if (p) fillForm(p);
+      }
+      if (action === "delete") deleteProject(id);
+    });
+
+    $$(".nav button").forEach(function(button) {
+      button.addEventListener("click", function() { showView(button.dataset.view); });
+    });
+
+    $$("[data-jump]").forEach(function(button) {
+      button.addEventListener("click", function() {
+        clearForm();
+        showView(button.dataset.jump);
+      });
+    });
+
+    $("#formCategory").addEventListener("change", function() { syncTypeOptions(); });
+    $("#searchInput").addEventListener("input", renderRows);
+    $("#categoryFilter").addEventListener("change", renderRows);
+    $("#statusFilter").addEventListener("change", renderRows);
+    $("#phaseFilter").addEventListener("change", renderRows);
+    $("#clearFilters").addEventListener("click", function() {
+      $("#searchInput").value = "";
+      $("#categoryFilter").value = "";
+      $("#statusFilter").value = "";
+      $("#phaseFilter").value = "";
+      renderRows();
+      toast("筛选已清空");
+    });
+
+    $("#projectForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      try {
+        const project = formToProject(event.currentTarget);
+        const index = projects.findIndex(function(p) { return p.id === project.id; });
+        if (index >= 0) {
+          projects[index] = project;
+          toast("项目已更新");
+        } else {
+          project.id = makeId();
+          projects.unshift(project);
+          toast("项目已创建");
+        }
+        save();
+        renderAll();
+        clearForm();
+        showView("projects");
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+
+    $("#cancelEdit").addEventListener("click", function() {
+      clearForm();
+      showView("projects");
+    });
+
+    $("#resetData").addEventListener("click", function() {
+      if (!confirm("确认恢复示例数据？当前本机项目数据会被示例数据覆盖。")) return;
+      projects = seedProjects.map(normalizeProject);
+      save();
+      renderAll();
+      toast("已恢复示例数据");
+    });
+
+    $("#exportCsv").addEventListener("click", exportCsv);
+    $("#exportJson").addEventListener("click", exportJson);
+    $("#importJson").addEventListener("click", function() { $("#importFile").click(); });
+    $("#importFile").addEventListener("change", function(event) {
+      const file = event.target.files[0];
+      if (file) importBackup(file);
+    });
+
+    $("#closeDetail").addEventListener("click", function() { $("#detailModal").classList.remove("show"); });
+    $("#detailModal").addEventListener("click", function(event) {
+      if (event.target.id === "detailModal") $("#detailModal").classList.remove("show");
+    });
+
+    renderFilters();
+    save();
+    renderAll();
+  </script>
+</body>
+</html>
