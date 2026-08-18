@@ -442,7 +442,7 @@
     .feed-item,
     .risk-item {
       display: grid;
-      grid-template-columns: 84px 1fr;
+      grid-template-columns: 84px 1fr auto;
       gap: 12px;
       padding: 0 0 11px;
       border-bottom: 1px solid #edf1f5;
@@ -471,6 +471,11 @@
     }
 
     .risk-item p strong { color: var(--red); }
+
+    .risk-action {
+      align-self: start;
+      white-space: nowrap;
+    }
 
     .bars { display: grid; gap: 12px; }
     .dashboard-mini { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1295,10 +1300,10 @@
 
     function renderRisks() {
       const risks = projects.filter(function(p) {
-        return p.status === "风险关注" || (p.risk && p.risk !== "暂无重大风险。");
+        return p.status === "风险关注" || (p.risk && p.risk !== "暂无重大风险。" && p.risk !== "已处理");
       }).slice(0, 6);
       $("#riskList").innerHTML = risks.length ? risks.map(function(p) {
-        return '<div class="risk-item"><time>' + escapeHtml(p.end) + '</time><div><b>' + escapeHtml(p.name) + '</b><p><strong>' + escapeHtml(p.risk) + '</strong></p><p>下一步：' + escapeHtml(p.next) + '</p></div></div>';
+        return '<div class="risk-item"><time>' + escapeHtml(p.end) + '</time><div><b>' + escapeHtml(p.name) + '</b><p><strong>' + escapeHtml(p.risk) + '</strong></p><p>下一步：' + escapeHtml(p.next) + '</p></div><button class="btn small primary risk-action" data-action="resolve-risk" data-id="' + p.id + '">已处理</button></div>';
       }).join("") : '<div class="empty">暂无风险与阻塞事项</div>';
     }
 
@@ -1400,6 +1405,27 @@
       }
     }
 
+    async function resolveRisk(id) {
+      const index = projects.findIndex(function(p) { return p.id === id; });
+      if (index < 0) return;
+      const project = Object.assign({}, projects[index], {
+        risk: "暂无重大风险。",
+        status: projects[index].status === "风险关注" ? "执行中" : projects[index].status,
+        phase: projects[index].phase === "监控" ? "执行" : projects[index].phase,
+        update: "风险已处理：" + projects[index].risk
+      });
+      try {
+        projects[index] = await saveProject(project, index + 1);
+        saveLocal();
+        renderAll();
+        toast("风险已处理并自动清除");
+      } catch (error) {
+        alert("风险处理失败：" + error.message);
+        projects = await loadProjects();
+        renderAll();
+      }
+    }
+
     function download(filename, text, type) {
       const blob = new Blob([text], { type });
       const url = URL.createObjectURL(blob);
@@ -1462,6 +1488,7 @@
         if (p) fillForm(p);
       }
       if (action === "delete") deleteProject(id);
+      if (action === "resolve-risk") resolveRisk(id);
     });
 
     $$(".nav button").forEach(function(button) {
