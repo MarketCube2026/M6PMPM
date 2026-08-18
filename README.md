@@ -8,6 +8,10 @@ Vercel 生产环境：
 
 https://m6pmpm.vercel.app/
 
+Cloudflare Pages：
+
+https://m6pmpm.pages.dev/
+
 GitHub Pages：
 
 https://marketcube2026.github.io/M6PMPM/

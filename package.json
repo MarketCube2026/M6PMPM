@@ -4,6 +4,8 @@
   "private": true,
   "description": "市场部项目管理系统 MVP 静态站点",
   "scripts": {
-    "start": "node scripts/server.cjs"
+    "start": "node scripts/server.cjs",
+    "build:cloudflare": "node scripts/deploy-cloudflare.cjs",
+    "deploy:cloudflare": "npm run build:cloudflare && wrangler pages deploy cloudflare-dist --project-name=m6pmpm --branch=main"
   }
 }
