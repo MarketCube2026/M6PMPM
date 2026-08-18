@@ -791,6 +791,7 @@
               <thead>
                 <tr>
                   <th>项目</th>
+                  <th>项目集</th>
                   <th>分类</th>
                   <th>负责人</th>
                   <th>周期</th>
@@ -903,6 +904,10 @@
             <input name="id" type="hidden" />
             <label>项目名称
               <input name="name" required placeholder="例如：Q4品牌传播专项" />
+            </label>
+            <label>项目集
+              <input name="projectSet" list="projectSetOptions" placeholder="手工输入或选择项目集" />
+              <datalist id="projectSetOptions"></datalist>
             </label>
             <label>负责人
               <input name="owner" required placeholder="例如：品牌传播组/项目经理" />
@@ -1017,6 +1022,7 @@
     };
     const phases = ["启动", "规划", "执行", "监控", "收尾"];
     const statuses = ["规划中", "执行中", "风险关注", "已完成"];
+    const projectSetOptions = ["K2登峰计划", "世和艾力斯云课堂", "季度业务经理会", "新医学沟通专员培训", "员工大会", "行业会议", "其他"];
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => Array.from(document.querySelectorAll(selector));
     let supabaseClient = null;
@@ -1036,6 +1042,17 @@
       return { "规划中": "规划", "执行中": "执行", "风险关注": "监控", "已完成": "收尾" }[status] || "启动";
     }
 
+    function inferProjectSet(project) {
+      const text = [project.name, project.category, project.type].join(" ");
+      if (text.includes("K2") || text.includes("登峰")) return "K2登峰计划";
+      if (text.includes("云课堂")) return "世和艾力斯云课堂";
+      if (text.includes("业务经理会") || text.includes("业务管理会")) return "季度业务经理会";
+      if (text.includes("医学沟通专员") || text.includes("新医学")) return "新医学沟通专员培训";
+      if (text.includes("员工大会")) return "员工大会";
+      if (text.includes("行业会议") || text.includes("年会")) return "行业会议";
+      return "其他";
+    }
+
     function normalizeProject(project) {
       const status = statuses.includes(project.status) ? project.status : "规划中";
       const category = taxonomy[project.category] ? project.category : "其他业务";
@@ -1043,6 +1060,7 @@
       return {
         id: project.id || makeId(),
         name: project.name || "未命名项目",
+        projectSet: project.projectSet || project.project_set || inferProjectSet(project),
         category,
         type,
         owner: project.owner || "待指定",
@@ -1078,6 +1096,7 @@
       return normalizeProject({
         id: row.id,
         name: row.name,
+        projectSet: row.project_set,
         category: row.category,
         type: row.type,
         owner: row.owner,
@@ -1099,6 +1118,7 @@
       return {
         id: project.id,
         name: project.name,
+        project_set: project.projectSet || "其他",
         category: project.category,
         type: project.type,
         owner: project.owner,
@@ -1253,7 +1273,7 @@
       const status = $("#statusFilter") ? $("#statusFilter").value : "";
       const phase = $("#phaseFilter") ? $("#phaseFilter").value : "";
       return projects.filter(function(p) {
-        const text = [p.name, p.category, p.type, p.owner, p.goal, p.deliverable, p.risk, p.next, p.update].join(" ").toLowerCase();
+        const text = [p.name, p.projectSet, p.category, p.type, p.owner, p.goal, p.deliverable, p.risk, p.next, p.update].join(" ").toLowerCase();
         return (!q || text.includes(q)) && (!cat || p.category === cat) && (!status || p.status === status) && (!phase || p.phase === phase);
       });
     }
@@ -1261,8 +1281,8 @@
     function renderRows() {
       const rows = filteredProjects();
       $("#projectRows").innerHTML = rows.length ? rows.map(function(p) {
-        return '<tr><td><strong>' + escapeHtml(p.name) + '</strong><br><span class="phase-chip">' + escapeHtml(p.phase) + '</span><div class="row-actions"><button class="btn small" data-action="detail" data-id="' + p.id + '">详情</button><button class="btn small" data-action="edit" data-id="' + p.id + '">编辑</button><button class="btn small danger" data-action="delete" data-id="' + p.id + '">删除</button></div></td><td>' + escapeHtml(p.category) + '<br><p>' + escapeHtml(p.type) + '</p></td><td>' + escapeHtml(p.owner) + '</td><td>' + escapeHtml(p.start) + '<br>' + escapeHtml(p.end) + '</td><td><span class="status ' + statusClass(p.status) + '">' + escapeHtml(p.status) + '</span></td><td><div class="progress" aria-label="进度 ' + p.progress + '%"><i style="width:' + p.progress + '%"></i></div><p>' + p.progress + '%</p></td><td><strong>目标：</strong>' + escapeHtml(p.goal) + '<p><strong>交付物：</strong>' + escapeHtml(p.deliverable) + '</p><p><strong>风险：</strong>' + escapeHtml(p.risk) + '</p><p><strong>下一步：</strong>' + escapeHtml(p.next) + '</p></td><td>' + escapeHtml(p.update) + '</td></tr>';
-      }).join("") : '<tr><td colspan="8" class="empty">没有符合条件的项目</td></tr>';
+        return '<tr><td><strong>' + escapeHtml(p.name) + '</strong><br><span class="phase-chip">' + escapeHtml(p.phase) + '</span><div class="row-actions"><button class="btn small" data-action="detail" data-id="' + p.id + '">详情</button><button class="btn small" data-action="edit" data-id="' + p.id + '">编辑</button><button class="btn small danger" data-action="delete" data-id="' + p.id + '">删除</button></div></td><td>' + escapeHtml(p.projectSet) + '</td><td>' + escapeHtml(p.category) + '<br><p>' + escapeHtml(p.type) + '</p></td><td>' + escapeHtml(p.owner) + '</td><td>' + escapeHtml(p.start) + '<br>' + escapeHtml(p.end) + '</td><td><span class="status ' + statusClass(p.status) + '">' + escapeHtml(p.status) + '</span></td><td><div class="progress" aria-label="进度 ' + p.progress + '%"><i style="width:' + p.progress + '%"></i></div><p>' + p.progress + '%</p></td><td><strong>目标：</strong>' + escapeHtml(p.goal) + '<p><strong>交付物：</strong>' + escapeHtml(p.deliverable) + '</p><p><strong>风险：</strong>' + escapeHtml(p.risk) + '</p><p><strong>下一步：</strong>' + escapeHtml(p.next) + '</p></td><td>' + escapeHtml(p.update) + '</td></tr>';
+      }).join("") : '<tr><td colspan="9" class="empty">没有符合条件的项目</td></tr>';
     }
 
     function renderKanban() {
@@ -1322,6 +1342,12 @@
       renderBars("#dashboardStatusBars", groupCount("status"));
     }
 
+    function renderProjectSetOptions() {
+      $("#projectSetOptions").innerHTML = projectSetOptions.map(function(name) {
+        return '<option value="' + escapeHtml(name) + '"></option>';
+      }).join("");
+    }
+
     function showView(id) {
       $$(".section").forEach(function(s) { s.classList.toggle("active", s.id === id); });
       $$(".nav button").forEach(function(b) { b.classList.toggle("active", b.dataset.view === id); });
@@ -1340,6 +1366,7 @@
       const form = $("#projectForm");
       form.elements.id.value = project.id;
       form.elements.name.value = project.name;
+      form.elements.projectSet.value = project.projectSet;
       form.elements.owner.value = project.owner;
       form.elements.category.value = project.category;
       syncTypeOptions(project.type);
@@ -1375,6 +1402,7 @@
       $("#detailTitle").textContent = p.name;
       $("#detailSub").textContent = p.category + " / " + p.type + " / " + p.owner;
       const fields = [
+        ["项目集", p.projectSet],
         ["状态", p.status + " · " + p.phase + " · " + p.progress + "%"],
         ["周期", p.start + " 至 " + p.end],
         ["项目目标", p.goal],
@@ -1437,9 +1465,9 @@
     }
 
     function exportCsv() {
-      const headers = ["项目", "大类", "类型", "负责人", "开始", "结束", "状态", "PMP阶段", "进度", "项目目标", "关键交付物", "风险/阻塞", "下一步动作", "最新动态"];
+      const headers = ["项目", "项目集", "大类", "类型", "负责人", "开始", "结束", "状态", "PMP阶段", "进度", "项目目标", "关键交付物", "风险/阻塞", "下一步动作", "最新动态"];
       const lines = [headers].concat(projects.map(function(p) {
-        return [p.name, p.category, p.type, p.owner, p.start, p.end, p.status, p.phase, p.progress, p.goal, p.deliverable, p.risk, p.next, p.update];
+        return [p.name, p.projectSet, p.category, p.type, p.owner, p.start, p.end, p.status, p.phase, p.progress, p.goal, p.deliverable, p.risk, p.next, p.update];
       }));
       const csv = lines.map(function(row) {
         return row.map(function(cell) { return '"' + String(cell).replaceAll('"', '""') + '"'; }).join(",");
@@ -1574,6 +1602,7 @@
 
     async function initApp() {
       renderFilters();
+      renderProjectSetOptions();
       projects = await loadProjects();
       renderAll();
     }
