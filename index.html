@@ -1027,6 +1027,10 @@
     const $$ = (selector) => Array.from(document.querySelectorAll(selector));
     let supabaseClient = null;
     let cloudReady = false;
+    let syncTimer = null;
+    let realtimeChannel = null;
+    let isSyncing = false;
+    let lastProjectSignature = "";
 
     function escapeHtml(value) {
       return String(value || "").replace(/[&<>"']/g, function(char) {
@@ -1160,7 +1164,7 @@
             .order("sort_order", { ascending: true })
             .order("created_at", { ascending: false });
           if (result.error) throw result.error;
-          if (Array.isArray(result.data) && result.data.length) {
+          if (Array.isArray(result.data)) {
             cloudReady = true;
             const loaded = result.data.map(rowToProject);
             saveLocal(loaded);
@@ -1177,6 +1181,12 @@
     }
 
     let projects = [];
+
+    function projectSignature(list) {
+      return JSON.stringify((list || []).map(function(p) {
+        return [p.id, p.name, p.projectSet, p.category, p.type, p.owner, p.start, p.end, p.status, p.phase, p.progress, p.goal, p.deliverable, p.risk, p.next, p.update, p.sortOrder];
+      }));
+    }
 
     function saveLocal(data) {
       localStorage.setItem(storeKey, JSON.stringify(data || projects));
@@ -1215,6 +1225,64 @@
         }
       }
       saveLocal(nextProjects);
+    }
+
+    function shouldSkipAutoSync() {
+      return $("#new") && $("#new").classList.contains("active");
+    }
+
+    async function syncProjects(options) {
+      const silent = options && options.silent;
+      if (isSyncing || shouldSkipAutoSync()) return;
+      isSyncing = true;
+      try {
+        const latest = await loadProjects();
+        const signature = projectSignature(latest);
+        if (signature !== lastProjectSignature) {
+          projects = latest;
+          lastProjectSignature = signature;
+          renderAll();
+          if (!silent) toast("所有板块已同步更新");
+        }
+        if (cloudReady) setDataStatus(true, "在线同步 · Supabase · 自动更新");
+      } catch (error) {
+        console.warn("自动同步失败", error);
+        setDataStatus(false, "在线同步暂不可用 · 使用本地缓存");
+      } finally {
+        isSyncing = false;
+      }
+    }
+
+    function startAutoSync() {
+      if (syncTimer) clearInterval(syncTimer);
+      syncTimer = setInterval(function() {
+        syncProjects({ silent: true });
+      }, 5000);
+      startRealtimeSync();
+      document.addEventListener("visibilitychange", function() {
+        if (!document.hidden) syncProjects({ silent: true });
+      });
+      window.addEventListener("focus", function() {
+        syncProjects({ silent: true });
+      });
+    }
+
+    function startRealtimeSync() {
+      if (!supabaseClient || realtimeChannel) return;
+      realtimeChannel = supabaseClient
+        .channel("m6-marketing-projects-realtime")
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: tableName
+        }, function() {
+          syncProjects({ silent: true });
+        })
+        .subscribe(function(status) {
+          if (status === "SUBSCRIBED" && cloudReady) {
+            setDataStatus(true, "在线同步 · Supabase · 实时更新");
+          }
+        });
     }
 
     function toast(message) {
@@ -1340,6 +1408,7 @@
       renderBars("#ownerBars", groupCount("owner", 8));
       renderBars("#dashboardPhaseBars", groupCount("phase"));
       renderBars("#dashboardStatusBars", groupCount("status"));
+      lastProjectSignature = projectSignature(projects);
     }
 
     function renderProjectSetOptions() {
@@ -1605,6 +1674,7 @@
       renderProjectSetOptions();
       projects = await loadProjects();
       renderAll();
+      startAutoSync();
     }
 
     initApp();
