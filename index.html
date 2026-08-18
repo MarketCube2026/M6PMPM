@@ -163,6 +163,7 @@
     .grid { display: grid; gap: 12px; }
     .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 12px; }
     .two-col { grid-template-columns: minmax(0, 1.2fr) minmax(340px, .8fr); align-items: start; }
+    .dashboard-grid { grid-template-columns: minmax(0, 1.12fr) minmax(360px, .88fr); align-items: start; }
     .three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .four-col { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
@@ -454,6 +455,15 @@
     .risk-item p strong { color: var(--red); }
 
     .bars { display: grid; gap: 12px; }
+    .dashboard-mini { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dashboard-list {
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .dashboard-feed {
+      max-height: 318px;
+    }
 
     .bar-row {
       display: grid;
@@ -637,14 +647,14 @@
       .app { grid-template-columns: 1fr; }
       aside { position: static; height: auto; }
       .nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .two-col, .kanban, .kpis, .four-col { grid-template-columns: 1fr 1fr; }
+      .two-col, .dashboard-grid, .kanban, .kpis, .four-col { grid-template-columns: 1fr 1fr; }
     }
 
     @media (max-width: 760px) {
       main { padding: 16px; }
       .topbar { display: grid; }
       .actions { justify-content: flex-start; }
-      .nav, .two-col, .kanban, .kpis, .three-col, .four-col, .form-grid, .pmp-flow, .detail-grid { grid-template-columns: 1fr; }
+      .nav, .two-col, .dashboard-grid, .dashboard-mini, .kanban, .kpis, .three-col, .four-col, .form-grid, .pmp-flow, .detail-grid { grid-template-columns: 1fr; }
       .toolbar input, .toolbar select { min-width: 100%; width: 100%; }
       .tax-card, .feed-item, .risk-item { grid-template-columns: 1fr; }
       .bar-row { grid-template-columns: 88px 1fr 32px; }
@@ -689,19 +699,31 @@
 
         <div class="grid kpis" id="kpiCards"></div>
 
-        <div class="grid two-col">
-          <div class="card panel">
-            <h3>项目分类地图</h3>
-            <div class="grid taxonomy" id="taxonomy"></div>
+        <div class="grid dashboard-grid">
+          <div class="grid">
+            <div class="card panel">
+              <h3>项目分类地图</h3>
+              <div class="grid taxonomy" id="taxonomy"></div>
+            </div>
+            <div class="grid dashboard-mini">
+              <div class="card panel">
+                <h3>PMP 阶段概览</h3>
+                <div class="bars" id="dashboardPhaseBars"></div>
+              </div>
+              <div class="card panel">
+                <h3>状态分布</h3>
+                <div class="bars" id="dashboardStatusBars"></div>
+              </div>
+            </div>
           </div>
           <div class="grid">
             <div class="card panel">
               <h3>风险与阻塞</h3>
-              <div class="risk-list" id="riskList"></div>
+              <div class="risk-list dashboard-list" id="riskList"></div>
             </div>
             <div class="card panel">
               <h3>近期动态</h3>
-              <div class="feed" id="activityFeed"></div>
+              <div class="feed dashboard-list dashboard-feed" id="activityFeed"></div>
             </div>
           </div>
         </div>
@@ -1146,6 +1168,8 @@
       renderBars("#statusBars", groupCount("status"));
       renderBars("#phaseBars", groupCount("phase"));
       renderBars("#ownerBars", groupCount("owner", 8));
+      renderBars("#dashboardPhaseBars", groupCount("phase"));
+      renderBars("#dashboardStatusBars", groupCount("status"));
     }
 
     function showView(id) {
