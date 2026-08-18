@@ -206,6 +206,24 @@
     .metric.risk strong,
     .metric.risk small { color: var(--red); }
 
+    .data-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eefaf7;
+      color: var(--brand-strong);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .data-status.offline {
+      background: #fff7ed;
+      color: var(--amber);
+    }
+
     .section {
       display: none;
       animation: rise .18s ease-out;
@@ -687,6 +705,7 @@
           <div>
             <h2>市场项目经营工作台</h2>
             <p>以 PMP 的启动、规划、执行、监控、收尾为主线，将市场推广、品牌宣传、物料内容、其他业务和数据复盘统一到一个项目池，服务负责人周会同步、风险预警和复盘沉淀。</p>
+            <span class="data-status offline" id="dataStatus">正在连接线上数据库...</span>
           </div>
           <div class="actions">
             <button class="btn" id="exportCsv">导出台账</button>
@@ -958,6 +977,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const taxonomy = {
       "市场推广": ["总部活动", "品牌项目", "区域支持", "其他"],
@@ -985,10 +1005,17 @@
 
     const oldStoreKeys = ["marketing-pm-mvp-projects-v2", "marketing-pm-mvp-projects"];
     const storeKey = "marketing-pm-mvp-projects-v3";
+    const supabaseConfig = {
+      url: "https://liqbfzbrjyvccjcktaxy.supabase.co",
+      key: "sb_publishable_a2_BfFb6gDLNxCXulGht5g_O0QX1KQ2",
+      table: "m6_marketing_projects"
+    };
     const phases = ["启动", "规划", "执行", "监控", "收尾"];
     const statuses = ["规划中", "执行中", "风险关注", "已完成"];
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+    let supabaseClient = null;
+    let cloudReady = false;
 
     function escapeHtml(value) {
       return String(value || "").replace(/[&<>"']/g, function(char) {
@@ -1023,11 +1050,68 @@
         deliverable: project.deliverable || "待补充关键交付物。",
         risk: project.risk || (status === "风险关注" ? "待明确风险与阻塞。" : "暂无重大风险。"),
         next: project.next || "待明确下一步动作。",
-        update: project.update || "新项目已创建，待补充最新动态。"
+        update: project.update || "新项目已创建，待补充最新动态。",
+        sortOrder: Number(project.sortOrder || project.sort_order || 0)
       };
     }
 
-    function loadProjects() {
+    function initSupabaseClient() {
+      if (!window.supabase || !supabaseConfig.url || !supabaseConfig.key) return null;
+      return window.supabase.createClient(supabaseConfig.url, supabaseConfig.key, {
+        auth: { persistSession: false, autoRefreshToken: false }
+      });
+    }
+
+    function setDataStatus(online, message) {
+      const node = $("#dataStatus");
+      if (!node) return;
+      node.textContent = message;
+      node.classList.toggle("offline", !online);
+    }
+
+    function rowToProject(row) {
+      return normalizeProject({
+        id: row.id,
+        name: row.name,
+        category: row.category,
+        type: row.type,
+        owner: row.owner,
+        start: row.start_date,
+        end: row.end_date,
+        status: row.status,
+        phase: row.phase,
+        progress: row.progress,
+        goal: row.goal,
+        deliverable: row.deliverable,
+        risk: row.risk,
+        next: row.next_action,
+        update: row.update_text,
+        sortOrder: row.sort_order
+      });
+    }
+
+    function projectToRow(project, index) {
+      return {
+        id: project.id,
+        name: project.name,
+        category: project.category,
+        type: project.type,
+        owner: project.owner,
+        start_date: project.start || null,
+        end_date: project.end || null,
+        status: project.status,
+        phase: project.phase,
+        progress: project.progress,
+        goal: project.goal,
+        deliverable: project.deliverable,
+        risk: project.risk,
+        next_action: project.next,
+        update_text: project.update,
+        sort_order: Number(project.sortOrder || index || 0)
+      };
+    }
+
+    function loadLocalProjects() {
       try {
         const current = JSON.parse(localStorage.getItem(storeKey) || "null");
         if (Array.isArray(current)) return current.map(normalizeProject);
@@ -1041,10 +1125,71 @@
       return seedProjects.map(normalizeProject);
     }
 
-    let projects = loadProjects();
+    async function loadProjects() {
+      supabaseClient = initSupabaseClient();
+      if (supabaseClient) {
+        try {
+          const result = await supabaseClient
+            .from(supabaseConfig.table)
+            .select("*")
+            .order("sort_order", { ascending: true })
+            .order("created_at", { ascending: false });
+          if (result.error) throw result.error;
+          if (Array.isArray(result.data) && result.data.length) {
+            cloudReady = true;
+            const loaded = result.data.map(rowToProject);
+            saveLocal(loaded);
+            setDataStatus(true, "在线数据库已连接 · Supabase");
+            return loaded;
+          }
+        } catch (error) {
+          console.warn("线上数据库读取失败，已回退本地缓存", error);
+        }
+      }
+      cloudReady = false;
+      setDataStatus(false, "线上数据库不可用 · 当前使用本地缓存");
+      return loadLocalProjects();
+    }
 
-    function save() {
-      localStorage.setItem(storeKey, JSON.stringify(projects));
+    let projects = [];
+
+    function saveLocal(data) {
+      localStorage.setItem(storeKey, JSON.stringify(data || projects));
+    }
+
+    async function saveProject(project, index) {
+      if (cloudReady && supabaseClient) {
+        const result = await supabaseClient
+          .from(supabaseConfig.table)
+          .upsert(projectToRow(project, index), { onConflict: "id" })
+          .select()
+          .single();
+        if (result.error) throw result.error;
+        return rowToProject(result.data);
+      }
+      saveLocal();
+      return project;
+    }
+
+    async function deleteProjectFromStore(id) {
+      if (cloudReady && supabaseClient) {
+        const result = await supabaseClient.from(supabaseConfig.table).delete().eq("id", id);
+        if (result.error) throw result.error;
+      }
+      saveLocal();
+    }
+
+    async function replaceProjectsInStore(nextProjects) {
+      if (cloudReady && supabaseClient) {
+        const deleteResult = await supabaseClient.from(supabaseConfig.table).delete().neq("id", "__never__");
+        if (deleteResult.error) throw deleteResult.error;
+        const rows = nextProjects.map(projectToRow);
+        if (rows.length) {
+          const insertResult = await supabaseClient.from(supabaseConfig.table).insert(rows);
+          if (insertResult.error) throw insertResult.error;
+        }
+      }
+      saveLocal(nextProjects);
     }
 
     function toast(message) {
@@ -1239,14 +1384,20 @@
       $("#detailModal").classList.add("show");
     }
 
-    function deleteProject(id) {
+    async function deleteProject(id) {
       const p = findProject(id);
       if (!p) return;
-      if (!confirm("确认删除项目：“" + p.name + "”？此操作只影响本机浏览器数据。")) return;
-      projects = projects.filter(function(item) { return item.id !== id; });
-      save();
-      renderAll();
-      toast("项目已删除");
+      if (!confirm("确认删除项目：“" + p.name + "”？此操作会同步到线上数据库。")) return;
+      try {
+        projects = projects.filter(function(item) { return item.id !== id; });
+        await deleteProjectFromStore(id);
+        renderAll();
+        toast("项目已删除并同步");
+      } catch (error) {
+        alert("删除失败：" + error.message);
+        projects = await loadProjects();
+        renderAll();
+      }
     }
 
     function download(filename, text, type) {
@@ -1282,15 +1433,15 @@
 
     function importBackup(file) {
       const reader = new FileReader();
-      reader.onload = function() {
+      reader.onload = async function() {
         try {
           const parsed = JSON.parse(reader.result);
           const incoming = Array.isArray(parsed) ? parsed : parsed.projects;
           if (!Array.isArray(incoming)) throw new Error("备份文件中没有 projects 数组");
           projects = incoming.map(normalizeProject);
-          save();
+          await replaceProjectsInStore(projects);
           renderAll();
-          toast("已导入 " + projects.length + " 个项目");
+          toast("已导入并同步 " + projects.length + " 个项目");
         } catch (error) {
           alert("导入失败：" + error.message);
         } finally {
@@ -1338,20 +1489,22 @@
       toast("筛选已清空");
     });
 
-    $("#projectForm").addEventListener("submit", function(event) {
+    $("#projectForm").addEventListener("submit", async function(event) {
       event.preventDefault();
       try {
         const project = formToProject(event.currentTarget);
         const index = projects.findIndex(function(p) { return p.id === project.id; });
         if (index >= 0) {
-          projects[index] = project;
-          toast("项目已更新");
+          project.sortOrder = projects[index].sortOrder || index + 1;
+          projects[index] = await saveProject(project, index + 1);
+          toast("项目已更新并同步");
         } else {
           project.id = makeId();
-          projects.unshift(project);
-          toast("项目已创建");
+          project.sortOrder = Date.now();
+          projects.unshift(await saveProject(project, project.sortOrder));
+          toast("项目已创建并同步");
         }
-        save();
+        saveLocal();
         renderAll();
         clearForm();
         showView("projects");
@@ -1365,12 +1518,18 @@
       showView("projects");
     });
 
-    $("#resetData").addEventListener("click", function() {
-      if (!confirm("确认恢复示例数据？当前本机项目数据会被示例数据覆盖。")) return;
+    $("#resetData").addEventListener("click", async function() {
+      if (!confirm("确认恢复示例数据？当前线上项目数据会被示例数据覆盖。")) return;
       projects = seedProjects.map(normalizeProject);
-      save();
-      renderAll();
-      toast("已恢复示例数据");
+      try {
+        await replaceProjectsInStore(projects);
+        renderAll();
+        toast("已恢复示例数据并同步");
+      } catch (error) {
+        alert("恢复失败：" + error.message);
+        projects = await loadProjects();
+        renderAll();
+      }
     });
 
     $("#exportCsv").addEventListener("click", exportCsv);
@@ -1386,9 +1545,13 @@
       if (event.target.id === "detailModal") $("#detailModal").classList.remove("show");
     });
 
-    renderFilters();
-    save();
-    renderAll();
+    async function initApp() {
+      renderFilters();
+      projects = await loadProjects();
+      renderAll();
+    }
+
+    initApp();
   </script>
 </body>
 </html>
