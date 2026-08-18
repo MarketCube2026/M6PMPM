@@ -1139,7 +1139,7 @@
             cloudReady = true;
             const loaded = result.data.map(rowToProject);
             saveLocal(loaded);
-            setDataStatus(true, "在线数据库已连接 · Supabase");
+            setDataStatus(true, "在线同步 · Supabase");
             return loaded;
           }
         } catch (error) {
